@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { isAuthorized } from "@/lib/auth/is-authorized";
 
 /**
  * Single-founder auth: no user table, no signup flow. The one allowed
@@ -40,4 +41,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
   session: { strategy: "jwt" },
   trustHost: true,
+  callbacks: {
+    // Required for `auth` to actually enforce anything when used as
+    // proxy.ts's request handler — without this, `auth` as middleware only
+    // attaches session info to the request and lets everything through.
+    authorized: isAuthorized,
+  },
 });

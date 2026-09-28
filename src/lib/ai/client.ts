@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import type { ZodType } from "zod";
 import { AI_CONFIG, requireGeminiApiKey } from "./config";
 
@@ -34,8 +34,7 @@ export async function generateStructuredJSON<T>({
   validator,
   temperature,
 }: GenerateStructuredOptions<T>): Promise<T> {
-  const genAI = new GoogleGenerativeAI(requireGeminiApiKey());
-  const model = genAI.getGenerativeModel({ model: AI_CONFIG.model });
+  const ai = new GoogleGenAI({ apiKey: requireGeminiApiKey() });
 
   let lastError: string | null = null;
 
@@ -47,16 +46,23 @@ export async function generateStructuredJSON<T>({
 
     let rawText: string;
     try {
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: AI_CONFIG.model,
         contents: [{ role: "user", parts: [{ text: attemptPrompt }] }],
-        generationConfig: {
+        config: {
           temperature,
           maxOutputTokens: AI_CONFIG.maxOutputTokens,
+          thinkingConfig: { thinkingBudget: AI_CONFIG.thinkingBudget },
           responseMimeType: "application/json",
           responseSchema: responseSchema as never,
         },
       });
-      rawText = result.response.text();
+      if (!result.text) {
+        throw new Error(
+          `Gemini returned no text (finishReason: ${result.candidates?.[0]?.finishReason ?? "unknown"})`
+        );
+      }
+      rawText = result.text;
     } catch (error) {
       lastError = error instanceof Error ? error.message : "Unknown Gemini API error";
       if (attempt === AI_CONFIG.maxRetries) {

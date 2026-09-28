@@ -1,0 +1,61 @@
+KARGO HIRING RUBRIC
+
+PRODUCT MANAGER
+
+Independent Ownership: What a strong candidate looks like: Owns
+meaningful work from problem definition through implementation and
+follow-through, with evidence that they personally made key decisions
+rather than relying on senior direction. Weight: 25%
+
+Problem Initiative: What a strong candidate looks like: Provides at
+least one concrete example of independently noticing a problem,
+inefficiency or unmet need and initiating a solution rather than simply
+executing assigned work. Weight: 20%
+
+Measurable Impact: What a strong candidate looks like: Connects their
+actions to observable outcomes such as adoption, revenue, retention,
+reduced support volume, faster processing or another quantified result.
+Weight: 20%
+
+Organisational Leverage: What a strong candidate looks like: Has created
+a process, tool, framework, document or working practice that was
+adopted and used by others beyond themselves. Weight: 15%
+
+Evidence & Learning: What a strong candidate looks like: Demonstrates
+testing assumptions, observing results and changing direction when
+evidence shows the original approach is not working; explicit examples
+of stopping or redirecting work are particularly strong evidence.
+Weight: 20%
+
+Total: 100%
+
+SENIOR PRODUCT MANAGER
+
+Independent Ownership: What a strong candidate looks like: Shows
+repeated evidence of independently owning consequential work end-to-end
+and making important decisions without needing senior direction or
+approval, including across multiple stakeholders and ambiguous
+situations. Weight: 30%
+
+Problem Initiative: What a strong candidate looks like: Repeatedly
+identifies important problems or opportunities independently and
+initiates action, with evidence that they helped determine what should
+be solved rather than only how to execute it. Weight: 15%
+
+Measurable Impact: What a strong candidate looks like: Shows multiple
+examples where personally owned decisions led to measurable customer,
+business or operational outcomes, with a clear connection between their
+action and the result. Weight: 20%
+
+Organisational Leverage: What a strong candidate looks like: Has built
+systems, processes, frameworks or ways of working that other people or
+teams adopted and continued using, improving how the wider organisation
+operates. Weight: 20%
+
+Evidence & Learning: What a strong candidate looks like: Demonstrates
+making consequential decisions with incomplete information, examining
+outcomes honestly and changing course when evidence contradicts the
+original assumption, including learning from failed or underperforming
+work. Weight: 15%
+
+Total: 100%

@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection (e.g. Supabase's pgbouncer/Transaction-mode URL) — used at runtime.
+  url       = env("DATABASE_URL")
+  // Direct (non-pooled) connection — required by `prisma migrate` against a pooled provider.
+  directUrl = env("DIRECT_URL")
+}
+
+enum RoleSlug {
+  PM
+  SPM
+}
+
+enum ProcessingStatus {
+  uploaded
+  extracting
+  redacting
+  scoring
+  generating
+  ready
+  error
+}
+
+enum EvidenceStrength {
+  none
+  weak
+  some
+  strong
+  exceptional
+}
+
+enum EmailType {
+  interview_invite
+  rejection
+}
+
+enum EmailStatus {
+  draft
+  sending
+  sent
+  failed
+}
+
+/// One row per hiring role. Seeded once; slug is the stable identifier used everywhere else.
+model Role {
+  id        String   @id @default(cuid())
+  slug      RoleSlug @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  criteria       RubricCriterion[]
+  candidates     Candidate[]
+  candidateScore CandidateScore[]
+
+  @@map("roles")
+}
+
+/// A snapshot of the rubric. Criteria never change in place — a rubric edit creates a new version
+/// so historical candidate scores stay explainable against the rubric that actually produced them.
+model RubricVersion {
+  id        String   @id @default(cuid())
+  version   Int      @unique
+  isActive  Boolean  @default(true)
+  sourceNote String?
+  createdAt DateTime @default(now())
+
+  criteria        RubricCriterion[]
+  candidateScores CandidateScore[]
+
+  @@map("rubric_versions")
+}
+
+model RubricCriterion {
+  id              String   @id @default(cuid())
+  rubricVersionId String
+  roleId          String
+  key             String
+  name            String
+  description     String
+  weight          Int
+  displayOrder    Int
+
+  rubricVersion RubricVersion    @relation(fields: [rubricVersionId], references: [id], onDelete: Cascade)
+  role          Role             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  criterionScores CriterionScore[]
+
+  @@unique([rubricVersionId, roleId, key])
+  @@map("rubric_criteria")
+}
+
+/// Non-PII candidate record. Nothing on this model is sent to the AI except sanitizedCvText,
+/// and sanitizedCvText itself has already had PII stripped by lib/pii before it ever lands here.
+model Candidate {
+  id                String           @id @default(cuid())
+  appliedRoleId     String
+  originalFilename  String
+  originalMimeType  String
+  sanitizedCvText   String
+  extractionWarning String?
+  processingStatus  ProcessingStatus @default(uploaded)
+  processingError   String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  appliedRole    Role                    @relation(fields: [appliedRoleId], references: [id])
+  privateDetails CandidatePrivateDetails?
+  scores         CandidateScore[]
+  interviewBrief InterviewBrief?
+  emailDrafts    EmailDraft[]
+  emailSends     EmailSend[]
+
+  @@map("candidates")
+}
+
+/// Isolated on purpose: this is the ONLY table holding contact PII. Never joined into anything
+/// that gets serialized for the AI layer — see lib/ai/* which only ever receives a Candidate id.
+model CandidatePrivateDetails {
+  id        String   @id @default(cuid())
+  candidateId String @unique
+  fullName  String
+  firstName String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_private_details")
+}
+
+/// One row per (candidate, role) scoring run. A candidate always gets both a PM and an SPM row,
+/// regardless of which role they applied for (see lib/scoring).
+model CandidateScore {
+  id              String   @id @default(cuid())
+  candidateId     String
+  roleId          String
+  rubricVersionId String
+  totalScore      Float
+  overallSummary  String
+  model           String
+  createdAt       DateTime @default(now())
+
+  candidate       Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  role            Role              @relation(fields: [roleId], references: [id])
+  rubricVersion   RubricVersion     @relation(fields: [rubricVersionId], references: [id])
+  criterionScores CriterionScore[]
+
+  @@unique([candidateId, roleId, rubricVersionId])
+  @@map("candidate_scores")
+}
+
+model CriterionScore {
+  id               String           @id @default(cuid())
+  candidateScoreId String
+  rubricCriterionId String
+  rawScore         Int
+  weightedScore    Float
+  reason           String
+  evidence         String[]
+  evidenceStrength EvidenceStrength
+
+  candidateScore  CandidateScore  @relation(fields: [candidateScoreId], references: [id], onDelete: Cascade)
+  rubricCriterion RubricCriterion @relation(fields: [rubricCriterionId], references: [id])
+
+  @@map("criterion_scores")
+}
+
+model InterviewBrief {
+  id          String   @id @default(cuid())
+  candidateId String   @unique
+  content     String
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("interview_briefs")
+}
+
+model EmailDraft {
+  id            String      @id @default(cuid())
+  candidateId   String
+  emailType     EmailType
+  subject       String
+  body          String
+  editedSubject String?
+  editedBody    String?
+  status        EmailStatus @default(draft)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  candidate Candidate   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  sends     EmailSend[]
+
+  @@map("email_drafts")
+}
+
+model EmailSend {
+  id              String   @id @default(cuid())
+  candidateId     String
+  emailDraftId    String
+  resendMessageId String?
+  recipient       String
+  sentAt          DateTime?
+  status          String
+  error           String?
+  createdAt       DateTime @default(now())
+
+  candidate  Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  emailDraft EmailDraft @relation(fields: [emailDraftId], references: [id], onDelete: Cascade)
+
+  @@map("email_sends")
+}
+
+/// Key/value config store. Read through lib/settings so thresholds are never hard-coded inline.
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}

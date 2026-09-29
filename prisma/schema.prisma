@@ -195,6 +195,7 @@ model EmailDraft {
   candidate Candidate   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   sends     EmailSend[]
 
+  @@unique([candidateId, emailType])
   @@map("email_drafts")
 }
 

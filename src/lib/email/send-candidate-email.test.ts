@@ -70,7 +70,7 @@ beforeEach(() => {
 describe("sendCandidateEmail", () => {
   it("sends successfully and marks the draft as sent", async () => {
     sendMock.mockResolvedValue({ data: { id: "resend-123" }, error: null });
-    const result = await sendCandidateEmail("cand-1");
+    const result = await sendCandidateEmail("cand-1", "draft-1");
     expect(result.ok).toBe(true);
     expect(draft.status).toBe("sent");
     expect(sendMock).toHaveBeenCalledTimes(1);
@@ -79,8 +79,8 @@ describe("sendCandidateEmail", () => {
   it("refuses to send twice — the second call finds the draft already claimed", async () => {
     sendMock.mockResolvedValue({ data: { id: "resend-123" }, error: null });
     const [first, second] = await Promise.all([
-      sendCandidateEmail("cand-1"),
-      sendCandidateEmail("cand-1"),
+      sendCandidateEmail("cand-1", "draft-1"),
+      sendCandidateEmail("cand-1", "draft-1"),
     ]);
     const outcomes = [first, second];
     expect(outcomes.filter((o) => o.ok)).toHaveLength(1);
@@ -90,16 +90,36 @@ describe("sendCandidateEmail", () => {
 
   it("rolls back to draft status on a Resend failure so it can be retried", async () => {
     sendMock.mockResolvedValue({ data: null, error: { message: "Resend rejected the request" } });
-    const result = await sendCandidateEmail("cand-1");
+    const result = await sendCandidateEmail("cand-1", "draft-1");
     expect(result.ok).toBe(false);
     expect(draft.status).toBe("draft");
   });
 
   it("personalizes the placeholder with the real name only at send time", async () => {
     sendMock.mockResolvedValue({ data: { id: "resend-1" }, error: null });
-    await sendCandidateEmail("cand-1");
+    await sendCandidateEmail("cand-1", "draft-1");
     const callArgs = sendMock.mock.calls[0][0];
     expect(callArgs.subject).toBe("Hi Priya");
     expect(callArgs.text).toBe("Body Priya");
+  });
+
+  it("refuses to send when the OTHER draft variant was already sent to this candidate", async () => {
+    const otherDraft: FakeDraft = {
+      id: "draft-2",
+      status: "sent",
+      subject: "Other",
+      body: "Other body",
+      editedSubject: null,
+      editedBody: null,
+    };
+    const { prisma } = await import("@/lib/db");
+    (prisma.candidate.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      id: "cand-1",
+      privateDetails: { email: "candidate@example.com", firstName: "Priya" },
+      emailDrafts: [draft, otherDraft],
+    });
+    const result = await sendCandidateEmail("cand-1", "draft-1");
+    expect(result.ok).toBe(false);
+    expect(sendMock).not.toHaveBeenCalled();
   });
 });

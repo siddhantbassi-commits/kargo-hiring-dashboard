@@ -5,7 +5,6 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { processCandidate } from "@/lib/pipeline/process-candidate";
 import { sendCandidateEmail } from "@/lib/email/send-candidate-email";
-import type { EmailType } from "@prisma/client";
 
 async function requireAuth() {
   const session = await auth();
@@ -29,28 +28,24 @@ export interface SaveDraftState {
 
 export async function saveDraftAction(
   candidateId: string,
-  draftId: string,
   _prevState: SaveDraftState | undefined,
   formData: FormData
 ): Promise<SaveDraftState> {
   await requireAuth();
+  const draftId = formData.get("draftId");
   const subject = formData.get("subject");
   const body = formData.get("body");
-  const emailType = formData.get("emailType");
 
+  if (typeof draftId !== "string" || !draftId) {
+    return { error: "Missing draft reference." };
+  }
   if (typeof subject !== "string" || typeof body !== "string" || !subject.trim() || !body.trim()) {
     return { error: "Subject and body cannot be empty." };
   }
 
   await prisma.emailDraft.update({
-    where: { id: draftId },
-    data: {
-      editedSubject: subject,
-      editedBody: body,
-      ...(emailType === "interview_invite" || emailType === "rejection"
-        ? { emailType: emailType as EmailType }
-        : {}),
-    },
+    where: { id: draftId, candidateId },
+    data: { editedSubject: subject, editedBody: body },
   });
 
   revalidatePath(`/candidates/${candidateId}`);
@@ -65,10 +60,14 @@ export interface SendState {
 export async function sendEmailAction(
   candidateId: string,
   _prevState: SendState | undefined,
-  _formData: FormData
+  formData: FormData
 ): Promise<SendState> {
   await requireAuth();
-  const result = await sendCandidateEmail(candidateId);
+  const draftId = formData.get("draftId");
+  if (typeof draftId !== "string" || !draftId) {
+    return { error: "Missing draft reference." };
+  }
+  const result = await sendCandidateEmail(candidateId, draftId);
   revalidatePath(`/candidates/${candidateId}`);
   if (!result.ok) return { error: result.error };
   return { success: true };

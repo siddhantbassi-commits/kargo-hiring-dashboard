@@ -17,6 +17,7 @@ export function Nav() {
           <nav className="flex items-center gap-1 text-sm">
             <NavLink href="/">Dashboard</NavLink>
             <NavLink href="/candidates/new">Add Candidate</NavLink>
+            <NavLink href="/rubric">Rubric</NavLink>
             <NavLink href="/settings">Settings</NavLink>
           </nav>
         </div>

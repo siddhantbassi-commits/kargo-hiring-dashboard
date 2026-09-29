@@ -8,28 +8,35 @@ export interface SendResult {
 }
 
 /**
- * Sends the candidate's current email draft via Resend. Never called
- * automatically — this is invoked exclusively by the founder clicking Send
- * on the candidate detail page (see the sendCandidateEmailAction server action).
+ * Sends one specific email draft (interview invite OR rejection — the
+ * founder's choice, made explicitly on the candidate detail page) via
+ * Resend. Never called automatically — this is invoked exclusively by the
+ * founder clicking Send (see the sendEmailAction server action).
  *
  * Duplicate-send protection: the draft is atomically claimed by flipping its
  * status from "draft" to "sending" via a conditional update. If zero rows are
  * affected, someone already claimed it (or it was never in "draft"), so we
- * bail out instead of sending twice.
+ * bail out instead of sending twice. A candidate only ever gets ONE email
+ * regardless of type, so we also refuse if the *other* variant was already sent.
  */
-export async function sendCandidateEmail(candidateId: string): Promise<SendResult> {
+export async function sendCandidateEmail(candidateId: string, draftId: string): Promise<SendResult> {
   const candidate = await prisma.candidate.findUnique({
     where: { id: candidateId },
     include: {
       privateDetails: true,
-      emailDrafts: { orderBy: { createdAt: "desc" }, take: 1 },
+      emailDrafts: true,
     },
   });
 
   if (!candidate) return { ok: false, error: "Candidate not found." };
 
-  const draft = candidate.emailDrafts[0];
+  const draft = candidate.emailDrafts.find((d) => d.id === draftId);
   if (!draft) return { ok: false, error: "No email draft exists for this candidate yet." };
+
+  const alreadySentOther = candidate.emailDrafts.find((d) => d.id !== draftId && d.status === "sent");
+  if (alreadySentOther) {
+    return { ok: false, error: "An email has already been sent to this candidate." };
+  }
 
   const recipient = candidate.privateDetails?.email;
   if (!recipient) {

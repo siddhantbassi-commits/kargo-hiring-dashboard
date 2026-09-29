@@ -24,7 +24,8 @@ export default async function CandidateDetailPage(props: PageProps<"/candidates/
   if (!detail) notFound();
 
   const { candidate, pmScore, spmScore, appliedScore, recommendation } = detail;
-  const draft = candidate.emailDrafts[0] ?? null;
+  const interviewInviteDraft = candidate.emailDrafts.find((d) => d.emailType === "interview_invite") ?? null;
+  const rejectionDraft = candidate.emailDrafts.find((d) => d.emailType === "rejection") ?? null;
   const latestSend = candidate.emailSends[0] ?? null;
   const name = candidate.privateDetails?.fullName ?? "Unknown candidate";
 
@@ -122,16 +123,32 @@ export default async function CandidateDetailPage(props: PageProps<"/candidates/
         </div>
       ) : null}
 
-      {draft ? (
+      {interviewInviteDraft || rejectionDraft ? (
         <div className="mt-6">
           <EmailDraftEditor
             candidateId={candidate.id}
-            draftId={draft.id}
-            emailType={draft.emailType}
-            subject={draft.editedSubject ?? draft.subject}
-            body={draft.editedBody ?? draft.body}
+            defaultEmailType={recommendation === "shortlist_recommended" ? "interview_invite" : "rejection"}
+            interviewInvite={
+              interviewInviteDraft
+                ? {
+                    id: interviewInviteDraft.id,
+                    subject: interviewInviteDraft.editedSubject ?? interviewInviteDraft.subject,
+                    body: interviewInviteDraft.editedBody ?? interviewInviteDraft.body,
+                    status: interviewInviteDraft.status,
+                  }
+                : null
+            }
+            rejection={
+              rejectionDraft
+                ? {
+                    id: rejectionDraft.id,
+                    subject: rejectionDraft.editedSubject ?? rejectionDraft.subject,
+                    body: rejectionDraft.editedBody ?? rejectionDraft.body,
+                    status: rejectionDraft.status,
+                  }
+                : null
+            }
             recipientEmail={candidate.privateDetails?.email ?? null}
-            alreadySent={draft.status === "sent"}
             sentAt={latestSend?.sentAt?.toISOString() ?? null}
             sendError={latestSend?.status === "failed" ? latestSend.error : null}
           />

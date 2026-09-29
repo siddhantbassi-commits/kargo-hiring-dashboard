@@ -101,8 +101,13 @@ vi.mock("@/lib/db", () => ({
       }),
     },
     emailDraft: {
-      findFirst: vi.fn(async ({ where }: { where: { candidateId: string } }) =>
-        emailDrafts.find((d) => d.candidateId === where.candidateId) ?? null
+      findUnique: vi.fn(
+        async ({ where }: { where: { candidateId_emailType: { candidateId: string; emailType: string } } }) =>
+          emailDrafts.find(
+            (d) =>
+              d.candidateId === where.candidateId_emailType.candidateId &&
+              d.emailType === where.candidateId_emailType.emailType
+          ) ?? null
       ),
       create: vi.fn(async ({ data }: { data: Omit<typeof emailDrafts[number], "id" | "createdAt"> }) => {
         const record = { ...data, id: `draft-${emailDrafts.length + 1}`, createdAt: new Date() };
@@ -190,8 +195,10 @@ describe("processCandidate", () => {
 
     expect(candidateStore.get("cand-2")!.processingStatus).toBe("ready");
     expect(generateInterviewBriefMock).toHaveBeenCalledTimes(1); // qualifies: 90 >= 70 threshold
-    const draft = emailDrafts.find((d) => d.candidateId === "cand-2")!;
-    expect(draft.emailType).toBe("interview_invite"); // driven by PM=90, not SPM=10
+    // Both variants are always drafted, regardless of recommendation —
+    // the founder can toggle between them on the candidate detail page.
+    const candDrafts = emailDrafts.filter((d) => d.candidateId === "cand-2");
+    expect(candDrafts.map((d) => d.emailType).sort()).toEqual(["interview_invite", "rejection"]);
   });
 
   it("drafts a rejection and skips the interview brief when the applied-role score is below threshold", async () => {
@@ -211,8 +218,8 @@ describe("processCandidate", () => {
     await processCandidate("cand-3");
 
     expect(generateInterviewBriefMock).not.toHaveBeenCalled();
-    const draft = emailDrafts.find((d) => d.candidateId === "cand-3")!;
-    expect(draft.emailType).toBe("rejection");
+    const candDrafts = emailDrafts.filter((d) => d.candidateId === "cand-3");
+    expect(candDrafts.map((d) => d.emailType).sort()).toEqual(["interview_invite", "rejection"]);
   });
 
   it("marks the candidate as errored (not stuck 'processing') when scoring fails", async () => {

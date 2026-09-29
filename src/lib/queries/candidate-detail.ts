@@ -10,7 +10,7 @@ export async function getCandidateDetail(candidateId: string) {
         appliedRole: true,
         privateDetails: true,
         interviewBrief: true,
-        emailDrafts: { orderBy: { createdAt: "desc" }, take: 1 },
+        emailDrafts: { orderBy: { emailType: "asc" } },
         emailSends: { orderBy: { createdAt: "desc" } },
         scores: {
           include: {

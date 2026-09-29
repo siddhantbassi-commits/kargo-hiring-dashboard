@@ -27,9 +27,28 @@
   --danger-border: #f0c4c2;
   --neutral-bg: #f1f1ef;
 
+  --info: #1d5fae;
+  --info-bg: #eaf2fc;
+  --info-border: #bcd7f5;
+  --violet: #6d28d9;
+  --violet-bg: #f2edfc;
+  --violet-border: #dccdf7;
+
+  --role-pm: #2f5fd6;
+  --role-pm-bg: #eaf0fd;
+  --role-spm: #8536e0;
+  --role-spm-bg: #f4ecfd;
+
+  --gradient-hero: linear-gradient(120deg, #131c33 0%, #1e2c52 38%, #3a4fb0 72%, #6a5fd3 100%);
+
+  --gold: #b8860b;
+  --silver: #6b7280;
+  --bronze: #9a5b32;
+
   --shadow-sm: 0 1px 2px 0 rgb(15 15 15 / 0.04);
   --shadow-md: 0 2px 8px -2px rgb(15 15 15 / 0.08), 0 1px 2px -1px rgb(15 15 15 / 0.04);
   --shadow-lg: 0 12px 32px -12px rgb(15 15 15 / 0.16);
+  --shadow-glow: 0 8px 30px -8px rgb(58 79 176 / 0.35);
 }
 
 @theme inline {
@@ -56,6 +75,16 @@
   --color-danger-bg: var(--danger-bg);
   --color-danger-border: var(--danger-border);
   --color-neutral-bg: var(--neutral-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
+  --color-violet: var(--violet);
+  --color-violet-bg: var(--violet-bg);
+  --color-violet-border: var(--violet-border);
+  --color-role-pm: var(--role-pm);
+  --color-role-pm-bg: var(--role-pm-bg);
+  --color-role-spm: var(--role-spm);
+  --color-role-spm-bg: var(--role-spm-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

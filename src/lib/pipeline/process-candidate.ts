@@ -161,19 +161,27 @@ export async function processCandidate(candidateId: string): Promise<void> {
       });
     }
 
-    const emailKind: EmailDraftKind = appliedResult.totalScore >= threshold ? "interview_invite" : "rejection";
     const topEvidence = [...appliedResult.matched]
       .sort((a, b) => b.entry.score - a.entry.score)
       .slice(0, 2)
       .flatMap((m) => m.entry.evidence)
       .slice(0, 3);
 
-    const draft = await generateEmailDraft({
-      kind: emailKind,
-      roleName: appliedResult.role.name,
-      topEvidence,
-      sanitizedCvText: candidate.sanitizedCvText,
-    });
+    // The founder can toggle between an interview invite and a rejection for
+    // any candidate on the detail page (their call, not the model's) — so
+    // both variants are always drafted up front, not just the one matching
+    // the applied-role recommendation.
+    const kinds: EmailDraftKind[] = ["interview_invite", "rejection"];
+    const [inviteDraft, rejectionDraft] = await Promise.all(
+      kinds.map((kind) =>
+        generateEmailDraft({
+          kind,
+          roleName: appliedResult.role.name,
+          topEvidence,
+          sanitizedCvText: candidate.sanitizedCvText,
+        })
+      )
+    );
 
     // Gemini only ever drafted with the {{candidate_name}} placeholder (it
     // never saw the real name). Resolve it server-side right here, once,
@@ -181,26 +189,29 @@ export async function processCandidate(candidateId: string): Promise<void> {
     // the editable draft, Save Draft) works with the resolved text from this
     // point on. See lib/email/personalize.ts.
     const firstName = candidate.privateDetails?.firstName ?? "there";
-    const subject = personalizeTemplate(draft.subject, firstName);
-    const body = personalizeTemplate(draft.body, firstName);
+    const variants: Array<{ kind: EmailDraftKind; subject: string; body: string }> = [
+      { kind: "interview_invite", subject: personalizeTemplate(inviteDraft.subject, firstName), body: personalizeTemplate(inviteDraft.body, firstName) },
+      { kind: "rejection", subject: personalizeTemplate(rejectionDraft.subject, firstName), body: personalizeTemplate(rejectionDraft.body, firstName) },
+    ];
 
-    const existingDraft = await prisma.emailDraft.findFirst({
-      where: { candidateId },
-      orderBy: { createdAt: "desc" },
-    });
+    for (const variant of variants) {
+      const existing = await prisma.emailDraft.findUnique({
+        where: { candidateId_emailType: { candidateId, emailType: variant.kind } },
+      });
 
-    if (!existingDraft) {
-      await prisma.emailDraft.create({
-        data: { candidateId, emailType: emailKind, subject, body },
-      });
-    } else if (existingDraft.status === "draft") {
-      // A prior unsent draft exists (e.g. a rescore) — replace it with the fresh one.
-      await prisma.emailDraft.update({
-        where: { id: existingDraft.id },
-        data: { emailType: emailKind, subject, body, editedSubject: null, editedBody: null },
-      });
+      if (!existing) {
+        await prisma.emailDraft.create({
+          data: { candidateId, emailType: variant.kind, subject: variant.subject, body: variant.body },
+        });
+      } else if (existing.status === "draft") {
+        // A prior unsent draft exists (e.g. a rescore) — replace it with the fresh one.
+        await prisma.emailDraft.update({
+          where: { id: existing.id },
+          data: { subject: variant.subject, body: variant.body, editedSubject: null, editedBody: null },
+        });
+      }
+      // If this variant was already sent, it is left untouched — sent history is immutable.
     }
-    // If a draft was already sent, it is left untouched — sent history is immutable.
 
     await setStatus(candidateId, "ready");
   } catch (error) {

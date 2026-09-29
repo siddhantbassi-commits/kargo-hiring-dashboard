@@ -36,7 +36,16 @@ function statusLabel(status: string): string {
   }
 }
 
-const RANK_STYLE = ["text-[#9a7b1f]", "text-[#6b7280]", "text-[#8a5a3a]"];
+const RANK_MEDAL: Array<{ bg: string; fg: string }> = [
+  { bg: "var(--gold)", fg: "#fff" },
+  { bg: "var(--silver)", fg: "#fff" },
+  { bg: "var(--bronze)", fg: "#fff" },
+];
+
+const ROLE_CHIP: Record<string, { bg: string; fg: string; label: string }> = {
+  "Product Manager": { bg: "var(--role-pm-bg)", fg: "var(--role-pm)", label: "PM" },
+  "Senior Product Manager": { bg: "var(--role-spm-bg)", fg: "var(--role-spm)", label: "SPM" },
+};
 
 export default async function DashboardPage(props: PageProps<"/">) {
   const searchParams = await props.searchParams;
@@ -62,27 +71,32 @@ export default async function DashboardPage(props: PageProps<"/">) {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Candidates</h1>
-          <p className="mt-0.5 text-sm text-muted">
-            Ranked by applied-role score. The system recommends — you decide.
-          </p>
+      <div
+        className="overflow-hidden rounded-2xl px-6 py-7 shadow-[var(--shadow-glow)] sm:px-8 sm:py-8"
+        style={{ background: "var(--gradient-hero)" }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Candidates</h1>
+            <p className="mt-1 text-sm text-white/70">
+              Ranked by applied-role score. The system recommends — you decide.
+            </p>
+          </div>
+          <Link
+            href="/candidates/new"
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-semibold text-[#1e2c52] shadow-[var(--shadow-sm)] transition-transform hover:-translate-y-px active:translate-y-0"
+          >
+            Add Candidate
+          </Link>
         </div>
-        <Link
-          href="/candidates/new"
-          className="flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground shadow-[var(--shadow-sm)] transition-transform hover:-translate-y-px active:translate-y-0"
-        >
-          Add Candidate
-        </Link>
-      </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatTile label="Total candidates" value={stats.total} icon={<IconUsers />} />
-        <StatTile label="PM candidates" value={stats.pmCount} icon={<IconBriefcase />} />
-        <StatTile label="SPM candidates" value={stats.spmCount} icon={<IconBriefcase />} />
-        <StatTile label="Shortlisted" value={stats.shortlisted} icon={<IconStar />} accent="success" />
-        <StatTile label="Pending review" value={stats.pendingReview} icon={<IconClock />} accent="warning" />
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <StatTile label="Total candidates" value={stats.total} icon={<IconUsers />} accent="info" tone="onGradient" />
+          <StatTile label="PM candidates" value={stats.pmCount} icon={<IconBriefcase />} accent="role-pm" tone="onGradient" />
+          <StatTile label="SPM candidates" value={stats.spmCount} icon={<IconBriefcase />} accent="role-spm" tone="onGradient" />
+          <StatTile label="Shortlisted" value={stats.shortlisted} icon={<IconStar />} accent="success" tone="onGradient" />
+          <StatTile label="Pending review" value={stats.pendingReview} icon={<IconClock />} accent="warning" tone="onGradient" />
+        </div>
       </div>
 
       <form className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
@@ -181,10 +195,22 @@ export default async function DashboardPage(props: PageProps<"/">) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, i) => (
+                {rows.map((row, i) => {
+                  const medal = RANK_MEDAL[i];
+                  const roleChip = ROLE_CHIP[row.appliedRoleName];
+                  return (
                   <tr key={row.id} className="group border-b border-border last:border-0 hover:bg-surface-hover">
-                    <td className={`px-4 py-3 tabular-nums font-semibold ${i < 3 ? RANK_STYLE[i] : "text-muted-2"}`}>
-                      {i + 1}
+                    <td className="px-4 py-3">
+                      {medal ? (
+                        <span
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold tabular-nums shadow-[var(--shadow-sm)]"
+                          style={{ backgroundColor: medal.bg, color: medal.fg }}
+                        >
+                          {i + 1}
+                        </span>
+                      ) : (
+                        <span className="pl-1.5 tabular-nums font-semibold text-muted-2">{i + 1}</span>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <Link href={`/candidates/${row.id}`} className="flex items-center gap-2.5">
@@ -194,7 +220,18 @@ export default async function DashboardPage(props: PageProps<"/">) {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-3 py-3 text-muted">{row.appliedRoleName}</td>
+                    <td className="px-3 py-3">
+                      {roleChip ? (
+                        <span
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                          style={{ backgroundColor: roleChip.bg, color: roleChip.fg }}
+                        >
+                          {roleChip.label}
+                        </span>
+                      ) : (
+                        <span className="text-muted">{row.appliedRoleName}</span>
+                      )}
+                    </td>
                     <td className="px-3 py-3">
                       <ScoreBar score={row.appliedRoleScore} />
                     </td>
@@ -220,7 +257,8 @@ export default async function DashboardPage(props: PageProps<"/">) {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

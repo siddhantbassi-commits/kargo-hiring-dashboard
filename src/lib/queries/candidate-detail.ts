@@ -3,29 +3,31 @@ import { getRecommendation } from "@/lib/scoring/recommendation";
 import { getSetting } from "@/lib/settings";
 
 export async function getCandidateDetail(candidateId: string) {
-  const candidate = await prisma.candidate.findUnique({
-    where: { id: candidateId },
-    include: {
-      appliedRole: true,
-      privateDetails: true,
-      interviewBrief: true,
-      emailDrafts: { orderBy: { createdAt: "desc" }, take: 1 },
-      emailSends: { orderBy: { createdAt: "desc" } },
-      scores: {
-        include: {
-          role: true,
-          criterionScores: {
-            include: { rubricCriterion: true },
-            orderBy: { rubricCriterion: { displayOrder: "asc" } },
+  const [candidate, threshold] = await Promise.all([
+    prisma.candidate.findUnique({
+      where: { id: candidateId },
+      include: {
+        appliedRole: true,
+        privateDetails: true,
+        interviewBrief: true,
+        emailDrafts: { orderBy: { createdAt: "desc" }, take: 1 },
+        emailSends: { orderBy: { createdAt: "desc" } },
+        scores: {
+          include: {
+            role: true,
+            criterionScores: {
+              include: { rubricCriterion: true },
+              orderBy: { rubricCriterion: { displayOrder: "asc" } },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    getSetting("SHORTLIST_THRESHOLD"),
+  ]);
 
   if (!candidate) return null;
 
-  const threshold = await getSetting("SHORTLIST_THRESHOLD");
   const pmScore = candidate.scores.find((s) => s.role.slug === "PM") ?? null;
   const spmScore = candidate.scores.find((s) => s.role.slug === "SPM") ?? null;
   const appliedScore = candidate.appliedRole.slug === "PM" ? pmScore : spmScore;

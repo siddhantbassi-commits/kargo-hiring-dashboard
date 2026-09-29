@@ -35,17 +35,21 @@ export interface DashboardFilters {
 export async function getDashboardData(
   filters: DashboardFilters
 ): Promise<{ rows: DashboardRow[]; stats: DashboardStats; threshold: number }> {
-  const threshold = await getSetting("SHORTLIST_THRESHOLD");
-
-  const candidates = await prisma.candidate.findMany({
-    include: {
-      appliedRole: true,
-      privateDetails: true,
-      scores: { include: { role: true } },
-      emailDrafts: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  // Two independent round trips to a Postgres instance on another continent
+  // from the app's serverless functions — running them concurrently instead
+  // of sequentially halves that latency cost.
+  const [threshold, candidates] = await Promise.all([
+    getSetting("SHORTLIST_THRESHOLD"),
+    prisma.candidate.findMany({
+      include: {
+        appliedRole: true,
+        privateDetails: true,
+        scores: { include: { role: true } },
+        emailDrafts: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   let rows: DashboardRow[] = candidates.map((c) => {
     const pmScore = c.scores.find((s) => s.role.slug === "PM")?.totalScore ?? null;

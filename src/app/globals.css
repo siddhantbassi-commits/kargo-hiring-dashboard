@@ -1,36 +1,60 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
+  --background: #f7f7f5;
   --surface: #ffffff;
-  --foreground: #1c1917;
-  --muted: #6b7280;
-  --border: #e7e5e4;
-  --accent: #1e3a5f;
+  --surface-hover: #fafaf9;
+  --foreground: #16191d;
+  --muted: #6b7178;
+  --muted-2: #9497a0;
+  --border: #e5e5e2;
+  --border-strong: #d4d4d1;
+
+  --accent: #16233d;
+  --accent-2: #2c4570;
   --accent-foreground: #ffffff;
-  --success: #166534;
-  --success-bg: #f0fdf4;
-  --warning: #92400e;
-  --warning-bg: #fffbeb;
-  --danger: #b91c1c;
-  --danger-bg: #fef2f2;
-  --neutral-bg: #f5f5f4;
+  --accent-soft: #eef1f6;
+  --ring: #2c4570;
+
+  --success: #14603f;
+  --success-bg: #ecf9f2;
+  --success-border: #b8e6cd;
+  --warning: #8a4d0a;
+  --warning-bg: #fdf3e4;
+  --warning-border: #f2d6a6;
+  --danger: #a3241f;
+  --danger-bg: #fbecec;
+  --danger-border: #f0c4c2;
+  --neutral-bg: #f1f1ef;
+
+  --shadow-sm: 0 1px 2px 0 rgb(15 15 15 / 0.04);
+  --shadow-md: 0 2px 8px -2px rgb(15 15 15 / 0.08), 0 1px 2px -1px rgb(15 15 15 / 0.04);
+  --shadow-lg: 0 12px 32px -12px rgb(15 15 15 / 0.16);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
+  --color-success-border: var(--success-border);
   --color-warning: var(--warning);
   --color-warning-bg: var(--warning-bg);
+  --color-warning-border: var(--warning-border);
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
   --color-neutral-bg: var(--neutral-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -40,4 +64,20 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeleton {
+  background-image: linear-gradient(90deg, var(--neutral-bg) 0%, #e7e7e4 50%, var(--neutral-bg) 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
 }

@@ -31,7 +31,7 @@ export function SettingsForm({
           min={0}
           max={100}
           defaultValue={shortlistThreshold}
-          className="w-32 rounded-md border border-border bg-surface px-3 py-2 text-sm"
+          className="w-32 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition-colors focus:border-accent-2 focus:ring-2 focus:ring-accent-2/15"
         />
       </div>
 
@@ -50,17 +50,25 @@ export function SettingsForm({
           min={1}
           max={100}
           defaultValue={topCandidatesForBrief}
-          className="w-32 rounded-md border border-border bg-surface px-3 py-2 text-sm"
+          className="w-32 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition-colors focus:border-accent-2 focus:ring-2 focus:ring-accent-2/15"
         />
       </div>
 
-      {state.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-      {state.success ? <p className="text-sm text-success">Settings saved.</p> : null}
+      {state.error ? (
+        <p className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
+          {state.error}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p className="flex items-center gap-1.5 text-sm text-success">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" /> Settings saved.
+        </p>
+      ) : null}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-fit rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-60"
+        className="w-fit rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-[var(--shadow-sm)] transition-transform hover:-translate-y-px disabled:translate-y-0 disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save Settings"}
       </button>

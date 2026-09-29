@@ -20,7 +20,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="username"
-          className="rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition-colors focus:border-accent-2 focus:ring-2 focus:ring-accent-2/15"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -33,14 +33,18 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition-colors focus:border-accent-2 focus:ring-2 focus:ring-accent-2/15"
         />
       </div>
-      {state.error ? <p className="text-sm text-danger">{state.error}</p> : null}
+      {state.error ? (
+        <p className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
+          {state.error}
+        </p>
+      ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-60"
+        className="mt-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-medium text-accent-foreground shadow-[var(--shadow-sm)] transition-transform hover:-translate-y-px disabled:translate-y-0 disabled:opacity-60"
       >
         {pending ? "Signing in…" : "Sign in"}
       </button>

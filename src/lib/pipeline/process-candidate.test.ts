@@ -20,6 +20,7 @@ vi.mock("@/lib/rubric/repository", () => ({
 
 vi.mock("@/lib/settings", () => ({
   getSetting: vi.fn(async (key: string) => (key === "SHORTLIST_THRESHOLD" ? 70 : 5)),
+  getAllSettings: vi.fn(async () => ({ SHORTLIST_THRESHOLD: 70, TOP_CANDIDATES_FOR_BRIEF: 5 })),
 }));
 
 // Each mock factory below is hoisted above these `const` declarations by

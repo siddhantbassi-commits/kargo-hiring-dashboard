@@ -6,8 +6,9 @@ import { generateInterviewBrief } from "@/lib/ai/interview-brief";
 import { generateEmailDraft } from "@/lib/ai/email-draft";
 import { computeWeightedTotal } from "@/lib/scoring/weighting";
 import { getRecommendation } from "@/lib/scoring/recommendation";
-import { getSetting } from "@/lib/settings";
+import { getAllSettings } from "@/lib/settings";
 import { AI_CONFIG } from "@/lib/ai/config";
+import { personalizeTemplate } from "@/lib/email/personalize";
 import type { EmailDraftKind } from "@/lib/ai/prompts/email-draft";
 
 async function setStatus(candidateId: string, status: ProcessingStatus, error: string | null = null) {
@@ -114,7 +115,7 @@ async function countHigherScoringReadyCandidates(
 export async function processCandidate(candidateId: string): Promise<void> {
   const candidate = await prisma.candidate.findUniqueOrThrow({
     where: { id: candidateId },
-    include: { appliedRole: true },
+    include: { appliedRole: true, privateDetails: true },
   });
 
   try {
@@ -130,8 +131,7 @@ export async function processCandidate(candidateId: string): Promise<void> {
     const appliedRoleSlug = candidate.appliedRole.slug;
     const appliedResult = appliedRoleSlug === "PM" ? pmResult : spmResult;
 
-    const threshold = await getSetting("SHORTLIST_THRESHOLD");
-    const topN = await getSetting("TOP_CANDIDATES_FOR_BRIEF");
+    const { SHORTLIST_THRESHOLD: threshold, TOP_CANDIDATES_FOR_BRIEF: topN } = await getAllSettings();
     const recommendation = getRecommendation(appliedResult.totalScore, threshold);
 
     const higherScoringCount = await countHigherScoringReadyCandidates(
@@ -175,6 +175,15 @@ export async function processCandidate(candidateId: string): Promise<void> {
       sanitizedCvText: candidate.sanitizedCvText,
     });
 
+    // Gemini only ever drafted with the {{candidate_name}} placeholder (it
+    // never saw the real name). Resolve it server-side right here, once,
+    // using the privately stored PII — everything downstream (the dashboard,
+    // the editable draft, Save Draft) works with the resolved text from this
+    // point on. See lib/email/personalize.ts.
+    const firstName = candidate.privateDetails?.firstName ?? "there";
+    const subject = personalizeTemplate(draft.subject, firstName);
+    const body = personalizeTemplate(draft.body, firstName);
+
     const existingDraft = await prisma.emailDraft.findFirst({
       where: { candidateId },
       orderBy: { createdAt: "desc" },
@@ -182,13 +191,13 @@ export async function processCandidate(candidateId: string): Promise<void> {
 
     if (!existingDraft) {
       await prisma.emailDraft.create({
-        data: { candidateId, emailType: emailKind, subject: draft.subject, body: draft.body },
+        data: { candidateId, emailType: emailKind, subject, body },
       });
     } else if (existingDraft.status === "draft") {
       // A prior unsent draft exists (e.g. a rescore) — replace it with the fresh one.
       await prisma.emailDraft.update({
         where: { id: existingDraft.id },
-        data: { emailType: emailKind, subject: draft.subject, body: draft.body },
+        data: { emailType: emailKind, subject, body, editedSubject: null, editedBody: null },
       });
     }
     // If a draft was already sent, it is left untouched — sent history is immutable.

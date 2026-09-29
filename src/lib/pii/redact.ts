@@ -63,6 +63,137 @@ function extractPhone(text: string): string | null {
   return null;
 }
 
+// Common resume section headers are short, all-letter, 2-4 word lines —
+// structurally indistinguishable from a real name unless explicitly excluded.
+// Every one of these appearing in the first 8 lines was previously
+// misdetected as the candidate's name.
+const SECTION_HEADER_WORDS = new Set([
+  "summary",
+  "profile",
+  "objective",
+  "professional",
+  "synopsis",
+  "experience",
+  "work",
+  "employment",
+  "education",
+  "academic",
+  "qualifications",
+  "skills",
+  "expertise",
+  "competencies",
+  "projects",
+  "achievements",
+  "certifications",
+  "awards",
+  "publications",
+  "research",
+  "scholastic",
+  "interests",
+  "languages",
+  "references",
+  "curriculum",
+  "vitae",
+  "resume",
+  "contact",
+  "personal",
+  "details",
+  "profile:",
+]);
+
+function looksLikeSectionHeader(words: string[]): boolean {
+  return words.some((word) => SECTION_HEADER_WORDS.has(word.toLowerCase().replace(/[:.]$/, "")));
+}
+
+// Many resume templates run the candidate's name directly into their job
+// title on the same visual line (e.g. "Rohan Mehta Strategy & Operations
+// Leader"), which defeats a whole-line match. These are the title/role words
+// most likely to immediately follow a name in that pattern — used to find
+// where the name portion ends rather than matching against the whole line.
+const TITLE_STOPWORDS = new Set([
+  "product",
+  "senior",
+  "junior",
+  "lead",
+  "head",
+  "chief",
+  "manager",
+  "management",
+  "director",
+  "officer",
+  "founder",
+  "president",
+  "vice",
+  "strategy",
+  "strategic",
+  "operations",
+  "engineer",
+  "engineering",
+  "developer",
+  "designer",
+  "analyst",
+  "analytics",
+  "associate",
+  "consultant",
+  "specialist",
+  "executive",
+  "leader",
+  "growth",
+  "marketing",
+  "sales",
+  "business",
+  "technical",
+  "data",
+  "software",
+  "project",
+  "program",
+  "delivery",
+  "partner",
+  "coordinator",
+  "intern",
+  "graduate",
+  "student",
+  "freelance",
+  "independent",
+  "co-founder",
+  "cofounder",
+  "ai",
+  "new",
+  "delhi",
+  "ncr",
+  "mumbai",
+  "bangalore",
+  "bengaluru",
+  "gurgaon",
+  "gurugram",
+  "noida",
+  "pune",
+  "chennai",
+  "hyderabad",
+  "kolkata",
+  "ahmedabad",
+]);
+
+/**
+ * Finds a leading run of 2-4 capitalized words at the very start of the text,
+ * stopping at the first digit/@ (contact info) or recognizable job-title word.
+ * Handles "Name Job Title ... phone email" laid out as a single run, which a
+ * whole-line match (looksLikeNameLine) cannot.
+ */
+function extractLeadingNameWords(text: string): string | null {
+  const words = text.trim().split(/\s+/).slice(0, 8);
+  const nameWords: string[] = [];
+  for (const word of words) {
+    if (/[\d@]/.test(word)) break;
+    if (!/^[A-Z][a-zA-Z'.-]*$/.test(word)) break;
+    const normalized = word.toLowerCase().replace(/[:.]$/, "");
+    if (TITLE_STOPWORDS.has(normalized) || SECTION_HEADER_WORDS.has(normalized)) break;
+    if (nameWords.length >= 4) break;
+    nameWords.push(word);
+  }
+  return nameWords.length >= 2 ? nameWords.join(" ") : null;
+}
+
 function looksLikeNameLine(line: string): boolean {
   const trimmed = line.trim();
   if (trimmed.length < 3 || trimmed.length > 60) return false;
@@ -70,7 +201,9 @@ function looksLikeNameLine(line: string): boolean {
   if (/https?:\/\//i.test(trimmed)) return false;
   const words = trimmed.split(/\s+/);
   if (words.length < 2 || words.length > 5) return false;
-  return words.every((word) => /^[A-Za-z][A-Za-z'.-]*$/.test(word));
+  if (!words.every((word) => /^[A-Za-z][A-Za-z'.-]*$/.test(word))) return false;
+  if (looksLikeSectionHeader(words)) return false;
+  return true;
 }
 
 function extractName(text: string): { fullName: string; confident: boolean } {
@@ -84,6 +217,11 @@ function extractName(text: string): { fullName: string; confident: boolean } {
     if (looksLikeNameLine(line)) {
       return { fullName: line.trim(), confident: true };
     }
+  }
+
+  const leading = extractLeadingNameWords(text);
+  if (leading) {
+    return { fullName: leading, confident: true };
   }
 
   return { fullName: "Candidate", confident: false };

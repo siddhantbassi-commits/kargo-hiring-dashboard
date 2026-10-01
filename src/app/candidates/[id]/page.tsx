@@ -67,7 +67,7 @@ export default async function CandidateDetailPage(props: PageProps<"/candidates/
         )
       ) : null}
 
-      <div className="mt-5 flex items-start justify-between gap-6 rounded-2xl border border-border bg-surface p-6 shadow-[var(--shadow-sm)]">
+      <div className="mt-5 flex flex-col items-start gap-6 rounded-2xl border border-border bg-surface p-6 shadow-[var(--shadow-sm)] sm:flex-row sm:justify-between">
         <div className="flex items-start gap-4">
           <Avatar name={name} size={52} />
           <div>
@@ -75,7 +75,7 @@ export default async function CandidateDetailPage(props: PageProps<"/candidates/
             <p className="mt-1 text-sm text-muted">
               Applied for {candidate.appliedRole.name} · {candidate.privateDetails?.email ?? "no email on file"}
             </p>
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               <RecommendationBadge recommendation={recommendation} />
               {candidate.processingStatus === "ready" ? (
                 <form action={rescoreCandidateAction.bind(null, candidate.id)}>
@@ -87,7 +87,9 @@ export default async function CandidateDetailPage(props: PageProps<"/candidates/
             </div>
           </div>
         </div>
-        <ScoreRing score={appliedScore ? appliedScore.totalScore : null} />
+        <div className="shrink-0 self-center sm:self-start">
+          <ScoreRing score={appliedScore ? appliedScore.totalScore : null} />
+        </div>
       </div>
 
       {candidate.extractionWarning ? (

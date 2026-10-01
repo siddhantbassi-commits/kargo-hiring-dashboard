@@ -12,5 +12,5 @@ export function getRecommendation(appliedRoleScore: number, threshold: number): 
 export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
   shortlist_recommended: "Shortlist Recommended",
   review_recommended: "Review Recommended",
-  below_threshold: "Below Current Shortlist Threshold",
+  below_threshold: "Below Threshold",
 };

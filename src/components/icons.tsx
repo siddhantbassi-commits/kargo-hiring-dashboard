@@ -76,6 +76,25 @@ export function IconClose({ className }: IconProps) {
   );
 }
 
+export function IconEye({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={className} {...base}>
+      <path d="M2.5 12S5.5 5.5 12 5.5 21.5 12 21.5 12 18.5 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function IconEyeOff({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={className} {...base}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 5.64A9.93 9.93 0 0 1 12 5.5c6.5 0 9.5 6.5 9.5 6.5a16.6 16.6 0 0 1-3.1 4.14M6.6 6.6C4.1 8.2 2.5 11 2.5 12S5.5 18.5 12 18.5c1.1 0 2.1-.14 3-.4" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </svg>
+  );
+}
+
 export function IconScale({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" className={className} {...base}>

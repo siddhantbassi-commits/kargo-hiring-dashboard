@@ -7,7 +7,8 @@ an editable email — but never sends anything and never makes the hiring decisi
 everything and clicks Send.
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the pipeline, privacy design, and key implementation
-decisions.
+decisions, and [PRIVACY.md](./PRIVACY.md) for the plain-language notice shown to candidates about how
+their data is handled.
 
 ## What it does
 

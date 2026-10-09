@@ -42,3 +42,9 @@ yarn-error.log*
 next-env.d.ts
 scripts/bulk-candidates/
 .claude/
+
+# e2e (Playwright)
+/playwright-report/
+/test-results/
+/e2e/.auth/
+/blob-report/

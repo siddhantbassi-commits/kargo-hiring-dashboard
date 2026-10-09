@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { ZodType } from "zod";
-import { AI_CONFIG, requireGeminiApiKey } from "./config";
+import { AI_CONFIG, geminiClientOptions } from "./config";
 
 export class AIError extends Error {
   constructor(message: string, readonly cause?: unknown) {
@@ -34,7 +34,7 @@ export async function generateStructuredJSON<T>({
   validator,
   temperature,
 }: GenerateStructuredOptions<T>): Promise<T> {
-  const ai = new GoogleGenAI({ apiKey: requireGeminiApiKey() });
+  const ai = new GoogleGenAI(geminiClientOptions());
 
   let lastError: string | null = null;
 

@@ -31,3 +31,17 @@ export function requireGeminiApiKey(): string {
   }
   return key;
 }
+
+/**
+ * Constructor options for `new GoogleGenAI(...)`. GEMINI_BASE_URL is unset
+ * everywhere except the E2E test run (see e2e/fixtures/gemini-server.ts and
+ * playwright.config.ts), where it points the real SDK at a local fixture
+ * server instead of the real Gemini API.
+ */
+export function geminiClientOptions() {
+  const baseUrl = process.env.GEMINI_BASE_URL;
+  return {
+    apiKey: requireGeminiApiKey(),
+    ...(baseUrl ? { httpOptions: { baseUrl } } : {}),
+  };
+}

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { prisma } from "@/lib/db";
-import { requireGeminiApiKey } from "@/lib/ai/config";
+import { geminiClientOptions } from "@/lib/ai/config";
 import { getResendClient, getFromAddress, EmailConfigError } from "@/lib/email/resend-client";
 
 /**
@@ -32,7 +32,7 @@ async function checkGemini(): Promise<CheckResult> {
   try {
     // models.list() is the cheapest real round-trip to Gemini: it exercises
     // auth + connectivity without spending any generation/thinking tokens.
-    const ai = new GoogleGenAI({ apiKey: requireGeminiApiKey() });
+    const ai = new GoogleGenAI(geminiClientOptions());
     await ai.models.list({ config: { pageSize: 1 } });
     return { ok: true };
   } catch (error) {

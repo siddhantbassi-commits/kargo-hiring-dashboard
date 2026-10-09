@@ -101,6 +101,26 @@ defense boilerplate, and duplicate-send prevention.
 
 Before deploying: `npm run lint`, `npx tsc --noEmit`, `npm run test`, `npm run build` should all pass.
 
+## End-to-end tests
+
+```bash
+npm run e2e           # requires Chromium: npx playwright install chromium (once)
+```
+
+A focused Playwright suite covering the critical path only (not full UI coverage): login + the
+unauthenticated redirect boundary, upload → score → review → delete a candidate, and the rubric
+weight-change confirm gate. It runs the real app against a real (ephemeral) Postgres, but Gemini and
+Resend are both faked — `GEMINI_BASE_URL`/`RESEND_BASE_URL` point the real SDKs at tiny local fixture
+servers (`e2e/fixtures/*-server.ts`) instead of the real APIs, so the suite never costs real API usage
+and never sends real email. The Gemini fixture reads the actual prompt text the app sends and returns a
+response shaped to match whichever structured-output schema that prompt is for (see
+`e2e/fixtures/gemini-server.ts`'s comment), rather than hardcoding per-test responses.
+
+Runs in CI on every push/PR (`.github/workflows/e2e.yml`) against a disposable `postgres:16` service
+container — migrated and seeded fresh each run, never touching the real Supabase database. To run it
+locally, point `DATABASE_URL`/`DIRECT_URL` (env vars, not `.env.local` — see `playwright.config.ts`) at
+your own disposable Postgres instance first.
+
 ## Monitoring
 
 `vercel.json` configures a daily Vercel Cron Job (`0 3 * * *` UTC) that hits `/api/health`, which checks

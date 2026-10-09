@@ -16,7 +16,7 @@ vi.mock("@google/genai", () => ({
 }));
 
 vi.mock("@/lib/ai/config", () => ({
-  requireGeminiApiKey: vi.fn(() => "test-gemini-key"),
+  geminiClientOptions: vi.fn(() => ({ apiKey: "test-gemini-key" })),
 }));
 
 const sendEmailMock = vi.fn();

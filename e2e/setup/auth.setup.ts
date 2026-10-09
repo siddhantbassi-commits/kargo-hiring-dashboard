@@ -10,8 +10,10 @@ import { FOUNDER_EMAIL, FOUNDER_PASSWORD, AUTH_STORAGE_STATE_PATH } from "../cre
  */
 setup("authenticate as the founder", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(FOUNDER_EMAIL);
-  await page.getByLabel("Password").fill(FOUNDER_PASSWORD);
+  // Not getByLabel("Password") — it also matches the "Show password" toggle
+  // button's aria-label (substring match), so it's ambiguous.
+  await page.locator("#email").fill(FOUNDER_EMAIL);
+  await page.locator("#password").fill(FOUNDER_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL("/");

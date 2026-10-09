@@ -17,8 +17,10 @@ test("a protected deep link is still blocked when logged out", async ({ page }) 
 
 test("wrong credentials are rejected with a generic error", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(FOUNDER_EMAIL);
-  await page.getByLabel("Password").fill("definitely-the-wrong-password");
+  // Not getByLabel("Password") — it also matches the "Show password" toggle
+  // button's aria-label (substring match), so it's ambiguous.
+  await page.locator("#email").fill(FOUNDER_EMAIL);
+  await page.locator("#password").fill("definitely-the-wrong-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByText(/invalid/i)).toBeVisible();
@@ -27,8 +29,8 @@ test("wrong credentials are rejected with a generic error", async ({ page }) => 
 
 test("correct credentials sign the founder in", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(FOUNDER_EMAIL);
-  await page.getByLabel("Password").fill(FOUNDER_PASSWORD);
+  await page.locator("#email").fill(FOUNDER_EMAIL);
+  await page.locator("#password").fill(FOUNDER_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL("/");

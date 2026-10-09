@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { spawn, execSync } from "node:child_process";
+import { PrismaClient } from "@prisma/client";
 import { APP_PORT, READINESS_PORT } from "./ports";
 import { FOUNDER_EMAIL, FOUNDER_PASSWORD } from "./credentials";
 
@@ -18,10 +19,7 @@ import { FOUNDER_EMAIL, FOUNDER_PASSWORD } from "./credentials";
  * route here moves that cost into (visible, timed) startup instead.
  */
 const BASE_URL = `http://127.0.0.1:${APP_PORT}`;
-// /candidates/<anything> compiles the dynamic [id] page template, which is
-// shared by every real candidate id — a 404 here (via notFound()) still
-// forces that compile.
-const WARM_UP_PATHS = ["/login", "/", "/candidates/new", "/rubric", "/candidates/warm-up-nonexistent-id"];
+const WARM_UP_PATHS = ["/login", "/", "/candidates/new", "/rubric"];
 
 function run(command: string) {
   console.log(`[start-app] $ ${command}`);
@@ -76,14 +74,53 @@ async function signInAndGetSessionCookie(): Promise<string> {
   return [csrfCookie, sessionCookie].filter(Boolean).join("; ");
 }
 
+async function fetchAndTime(path: string, cookie: string) {
+  const start = Date.now();
+  const res = await fetch(`${BASE_URL}${path}`, { headers: { cookie } });
+  await res.arrayBuffer(); // drain the body — some servers don't finish the response until read
+  console.log(`[start-app] warmed ${path} -> ${res.status} in ${Date.now() - start}ms`);
+}
+
+/**
+ * The dynamic /candidates/[id] page's client components (DeleteCandidateButton,
+ * EmailDraftEditor) only get bundled once actually RENDERED — a nonexistent
+ * id hits `notFound()` before React ever reaches them, so visiting one
+ * doesn't compile anything useful. A real, fully-rendered candidate (ready
+ * status + at least one email draft, so EmailDraftEditor mounts) is the only
+ * way to warm that page's real client bundle. Created and torn down here, so
+ * the suite's own tests still see an empty dashboard.
+ */
+async function withWarmUpCandidate<T>(prisma: PrismaClient, fn: (candidateId: string) => Promise<T>): Promise<T> {
+  const role = await prisma.role.findFirstOrThrow({ where: { slug: "PM" } });
+  const candidate = await prisma.candidate.create({
+    data: {
+      appliedRoleId: role.id,
+      originalFilename: "warm-up.txt",
+      originalMimeType: "text/plain",
+      sanitizedCvText: "Warm-up candidate used only to pre-compile this page's client bundle.",
+      processingStatus: "ready",
+      privateDetails: { create: { fullName: "Warm Up", firstName: "Warm" } },
+      emailDrafts: { create: { emailType: "rejection", subject: "Warm-up", body: "Warm-up" } },
+    },
+  });
+  try {
+    return await fn(candidate.id);
+  } finally {
+    await prisma.candidate.delete({ where: { id: candidate.id } });
+  }
+}
+
 async function warmUp() {
   const cookie = await signInAndGetSessionCookie();
   for (const path of WARM_UP_PATHS) {
-    const start = Date.now();
-    const res = await fetch(`${BASE_URL}${path}`, { headers: { cookie } });
-    // Drain the body — some servers don't finish the response until read.
-    await res.arrayBuffer();
-    console.log(`[start-app] warmed ${path} -> ${res.status} in ${Date.now() - start}ms`);
+    await fetchAndTime(path, cookie);
+  }
+
+  const prisma = new PrismaClient();
+  try {
+    await withWarmUpCandidate(prisma, (candidateId) => fetchAndTime(`/candidates/${candidateId}`, cookie));
+  } finally {
+    await prisma.$disconnect();
   }
 }
 

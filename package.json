@@ -15,7 +15,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "hash-password": "tsx scripts/hash-password.ts",
     "e2e": "playwright test",
-    "e2e:prepare-and-serve": "prisma migrate deploy && tsx prisma/seed.ts && next dev -p 3100"
+    "e2e:prepare-and-serve": "tsx e2e/start-app.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

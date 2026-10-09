@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import bcrypt from "bcryptjs";
-import { APP_PORT, GEMINI_FIXTURE_PORT, RESEND_FIXTURE_PORT } from "./e2e/ports";
+import { APP_PORT, GEMINI_FIXTURE_PORT, RESEND_FIXTURE_PORT, READINESS_PORT } from "./e2e/ports";
 import { FOUNDER_EMAIL, FOUNDER_PASSWORD, AUTH_STORAGE_STATE_PATH } from "./e2e/credentials";
 
 /**
@@ -59,10 +59,14 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      // Migrate + seed a fresh DB, then serve the real app — see package.json's "e2e:prepare-and-serve".
+      // Migrate + seed a fresh DB, then serve the real app — see
+      // e2e/start-app.mts. Health-checked on READINESS_PORT, not APP_PORT:
+      // that script only opens READINESS_PORT once it has pre-warmed every
+      // route the suite visits, so this can't pass while Turbopack is still
+      // mid-compile on one of them.
       command: "npm run e2e:prepare-and-serve",
-      url: `http://127.0.0.1:${APP_PORT}/login`,
-      timeout: 120_000,
+      url: `http://127.0.0.1:${READINESS_PORT}`,
+      timeout: 180_000,
       reuseExistingServer: false,
       env: appEnv,
     },

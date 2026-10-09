@@ -6,3 +6,5 @@
 export const APP_PORT = 3100;
 export const GEMINI_FIXTURE_PORT = 4100;
 export const RESEND_FIXTURE_PORT = 4101;
+// Separate from APP_PORT on purpose — see e2e/start-app.mts's comment.
+export const READINESS_PORT = 3199;

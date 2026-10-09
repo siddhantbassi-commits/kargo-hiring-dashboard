@@ -41,7 +41,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
+  reporter: process.env.CI ? [["github"], ["list"], ["html", { open: "never" }]] : [["list"]],
+  timeout: 60_000, // next dev cold-compiles each route on first visit — generous headroom for that, not just network latency
   use: {
     baseURL: `http://127.0.0.1:${APP_PORT}`,
     trace: "retain-on-failure",

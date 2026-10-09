@@ -65,6 +65,7 @@ function RoleCard({
                 step={1}
                 disabled={disabled}
                 name={`weight__${roleKey}__${c.key}`}
+                aria-label={`${c.name} weight`}
                 value={weights[c.key]}
                 onChange={(e) => onChange(c.key, Number(e.target.value))}
                 className="w-16 rounded-lg border border-border bg-surface px-2 py-1.5 text-right text-sm font-semibold tabular-nums outline-none transition-colors focus:border-accent-2 focus:ring-2 focus:ring-accent-2/15 disabled:bg-surface-hover disabled:opacity-70"

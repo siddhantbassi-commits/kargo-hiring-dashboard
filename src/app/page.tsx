@@ -114,8 +114,9 @@ export default async function DashboardPage(props: PageProps<"/">) {
 
       <form className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted">Role</label>
+          <label htmlFor="filter-role" className="text-xs font-medium text-muted">Role</label>
           <select
+            id="filter-role"
             name="role"
             defaultValue={filters.role ?? ""}
             className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-accent-2"
@@ -126,8 +127,9 @@ export default async function DashboardPage(props: PageProps<"/">) {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted">Status</label>
+          <label htmlFor="filter-status" className="text-xs font-medium text-muted">Status</label>
           <select
+            id="filter-status"
             name="status"
             defaultValue={filters.status ?? ""}
             className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-accent-2"
@@ -140,8 +142,9 @@ export default async function DashboardPage(props: PageProps<"/">) {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted">Sort by</label>
+          <label htmlFor="filter-sort" className="text-xs font-medium text-muted">Sort by</label>
           <select
+            id="filter-sort"
             name="sort"
             defaultValue={filters.sort}
             className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-accent-2"
@@ -151,10 +154,11 @@ export default async function DashboardPage(props: PageProps<"/">) {
           </select>
         </div>
         <div className="flex min-w-[200px] flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-muted">Search candidate</label>
+          <label htmlFor="filter-search" className="text-xs font-medium text-muted">Search candidate</label>
           <div className="relative">
             <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
+              id="filter-search"
               name="search"
               defaultValue={filters.search ?? ""}
               placeholder="Name…"
@@ -195,16 +199,18 @@ export default async function DashboardPage(props: PageProps<"/">) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-hover text-left text-[11px] font-semibold uppercase tracking-wider text-muted">
-                  <th className="w-12 px-4 py-2.5">Rank</th>
-                  <th className="px-3 py-2.5">Candidate</th>
-                  <th className="px-3 py-2.5">Applied Role</th>
-                  <th className="px-3 py-2.5">Applied-Role Score</th>
-                  <th className="px-3 py-2.5">PM Score</th>
-                  <th className="px-3 py-2.5">SPM Score</th>
-                  <th className="px-3 py-2.5">Recommendation</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Date Added</th>
-                  <th className="px-4 py-2.5" />
+                  <th scope="col" className="w-12 px-4 py-2.5">Rank</th>
+                  <th scope="col" className="px-3 py-2.5">Candidate</th>
+                  <th scope="col" className="px-3 py-2.5">Applied Role</th>
+                  <th scope="col" className="px-3 py-2.5">Applied-Role Score</th>
+                  <th scope="col" className="px-3 py-2.5">PM Score</th>
+                  <th scope="col" className="px-3 py-2.5">SPM Score</th>
+                  <th scope="col" className="px-3 py-2.5">Recommendation</th>
+                  <th scope="col" className="px-3 py-2.5">Status</th>
+                  <th scope="col" className="px-3 py-2.5">Date Added</th>
+                  <th scope="col" className="px-4 py-2.5">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

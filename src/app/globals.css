@@ -6,7 +6,7 @@
   --surface-hover: #fafaf9;
   --foreground: #16191d;
   --muted: #6b7178;
-  --muted-2: #9497a0;
+  --muted-2: #70737e; /* WCAG AA (4.5:1) against --surface/white — #9497a0 only cleared 2.9:1 */
   --border: #e5e5e2;
   --border-strong: #d4d4d1;
 

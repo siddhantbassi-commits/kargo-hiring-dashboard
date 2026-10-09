@@ -299,7 +299,7 @@ export default async function DashboardPage(props: PageProps<"/">) {
                 ← Previous
               </Link>
             ) : (
-              <span className="rounded-md border border-border px-3 py-1.5 text-muted-2 opacity-50">
+              <span aria-disabled="true" className="rounded-md border border-border px-3 py-1.5 text-muted-2 opacity-50">
                 ← Previous
               </span>
             )}
@@ -311,7 +311,7 @@ export default async function DashboardPage(props: PageProps<"/">) {
                 Next →
               </Link>
             ) : (
-              <span className="rounded-md border border-border px-3 py-1.5 text-muted-2 opacity-50">
+              <span aria-disabled="true" className="rounded-md border border-border px-3 py-1.5 text-muted-2 opacity-50">
                 Next →
               </span>
             )}

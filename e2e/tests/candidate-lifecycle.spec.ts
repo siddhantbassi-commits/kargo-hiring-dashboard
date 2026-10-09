@@ -24,9 +24,12 @@ test("upload → score → review → delete a candidate", async ({ page }) => {
   // Both rubrics were scored (the app always scores PM and SPM regardless of
   // applied role) — the fixture Gemini server scores every criterion at a
   // uniform 70/100, so the weighted total is 70 for both, regardless of the
-  // rubric's actual weight split.
+  // rubric's actual weight split. Scoped to the headline total's styling
+  // (text-lg) rather than a plain text match: since every criterion is also
+  // individually scored 70, a plain "70/100" text match also catches each
+  // criterion row's own (differently-styled, text-sm) raw-score display.
   await expect(page.getByText("Fixture-generated overall summary for E2E testing.").first()).toHaveCount(1);
-  await expect(page.getByText("70/100")).toHaveCount(2);
+  await expect(page.locator("span.text-lg.font-semibold", { hasText: "70" })).toHaveCount(2);
 
   // The email draft was generated with the {{candidate_name}} placeholder by
   // the (fixture) model and resolved server-side to the real name — never

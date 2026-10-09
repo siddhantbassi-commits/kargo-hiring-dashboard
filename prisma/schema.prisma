@@ -113,6 +113,8 @@ model Candidate {
   emailDrafts    EmailDraft[]
   emailSends     EmailSend[]
 
+  // Serves process-candidate.ts's countHigherScoringReadyCandidates, run on every upload.
+  @@index([appliedRoleId, processingStatus])
   @@map("candidates")
 }
 
@@ -150,6 +152,8 @@ model CandidateScore {
   criterionScores CriterionScore[]
 
   @@unique([candidateId, roleId, rubricVersionId])
+  // Serves process-candidate.ts's countHigherScoringReadyCandidates, run on every upload.
+  @@index([roleId, totalScore])
   @@map("candidate_scores")
 }
 
@@ -166,6 +170,8 @@ model CriterionScore {
   candidateScore  CandidateScore  @relation(fields: [candidateScoreId], references: [id], onDelete: Cascade)
   rubricCriterion RubricCriterion @relation(fields: [rubricCriterionId], references: [id])
 
+  // Serves process-candidate.ts's delete-then-recreate on every (re)score.
+  @@index([candidateScoreId])
   @@map("criterion_scores")
 }
 

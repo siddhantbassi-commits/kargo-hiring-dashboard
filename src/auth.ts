@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { isAuthorized } from "@/lib/auth/is-authorized";
+import { isLoginLocked, recordFailedLogin, recordSuccessfulLogin } from "@/lib/auth/login-rate-limit";
 
 /**
  * Single-founder auth: no user table, no signup flow. The one allowed
@@ -29,11 +30,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        if (email.trim().toLowerCase() !== founderEmail.trim().toLowerCase()) return null;
+        if (await isLoginLocked()) return null;
+
+        if (email.trim().toLowerCase() !== founderEmail.trim().toLowerCase()) {
+          await recordFailedLogin();
+          return null;
+        }
 
         const valid = await bcrypt.compare(password, founderPasswordHash);
-        if (!valid) return null;
+        if (!valid) {
+          await recordFailedLogin();
+          return null;
+        }
 
+        await recordSuccessfulLogin();
         return { id: "founder", email: founderEmail, name: "Founder" };
       },
     }),

@@ -6,12 +6,13 @@ import { IconEye, IconEyeOff } from "@/components/icons";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl }: { callbackUrl: string | null }) {
   const [state, action, pending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm font-medium text-foreground">
           Email

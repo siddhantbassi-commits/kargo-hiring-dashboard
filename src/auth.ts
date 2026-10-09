@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { isAuthorized } from "@/lib/auth/is-authorized";
-import { isLoginLocked, recordFailedLogin, recordSuccessfulLogin } from "@/lib/auth/login-rate-limit";
+import { getClientIp, isLoginLocked, recordFailedLogin, recordSuccessfulLogin } from "@/lib/auth/login-rate-limit";
 
 /**
  * Single-founder auth: no user table, no signup flow. The one allowed
@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, request) => {
         const email = credentials?.email;
         const password = credentials?.password;
         if (typeof email !== "string" || typeof password !== "string") return null;
@@ -30,20 +30,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        if (await isLoginLocked()) return null;
+        const ip = getClientIp(request);
+        if (await isLoginLocked(ip)) return null;
 
         if (email.trim().toLowerCase() !== founderEmail.trim().toLowerCase()) {
-          await recordFailedLogin();
+          await recordFailedLogin(ip);
           return null;
         }
 
         const valid = await bcrypt.compare(password, founderPasswordHash);
         if (!valid) {
-          await recordFailedLogin();
+          await recordFailedLogin(ip);
           return null;
         }
 
-        await recordSuccessfulLogin();
+        await recordSuccessfulLogin(ip);
         return { id: "founder", email: founderEmail, name: "Founder" };
       },
     }),

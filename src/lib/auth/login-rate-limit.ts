@@ -1,62 +1,60 @@
 import { prisma } from "@/lib/db";
 
 /**
- * Login attempt throttling for the single founder account. There's no
- * per-IP store (no Redis/KV provisioned), and there's only ever one valid
- * account anyway, so this tracks a single global counter in app_settings
- * (an existing key/value table — no migration needed) rather than per-IP.
+ * Per-IP login attempt throttling (login_attempts table — one row per source
+ * IP). An earlier version tracked a single global counter in app_settings,
+ * which meant one attacker's failed attempts could lock out the real founder
+ * too; this keys the counter on the request's IP instead so that only the
+ * attacker's own IP gets locked out.
  *
  * Deliberately returns the same generic "invalid credentials" failure
- * whether the account is locked or the password was simply wrong — telling
- * an attacker they've triggered a lockout (and its exact timing) is itself
- * information leakage for a single-account system.
+ * whether the IP is locked or the password was simply wrong — telling an
+ * attacker they've triggered a lockout (and its exact timing) is itself
+ * information leakage.
  */
 const MAX_ATTEMPTS = 10;
 const WINDOW_MS = 15 * 60 * 1000;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
-const FAILED_COUNT_KEY = "LOGIN_FAILED_COUNT";
-const FAILED_SINCE_KEY = "LOGIN_FAILED_SINCE";
-const LOCKED_UNTIL_KEY = "LOGIN_LOCKED_UNTIL";
-
-async function getValue(key: string): Promise<string | null> {
-  const row = await prisma.appSetting.findUnique({ where: { key } });
-  return row?.value ?? null;
+export function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return request.headers.get("x-real-ip") ?? "unknown";
 }
 
-async function setValue(key: string, value: string): Promise<void> {
-  await prisma.appSetting.upsert({
-    where: { key },
-    update: { value },
-    create: { key, value },
+export async function isLoginLocked(ip: string): Promise<boolean> {
+  const row = await prisma.loginAttempt.findUnique({ where: { ip } });
+  return !!row?.lockedUntil && Date.now() < row.lockedUntil.getTime();
+}
+
+export async function recordFailedLogin(ip: string): Promise<void> {
+  const now = Date.now();
+  const row = await prisma.loginAttempt.findUnique({ where: { ip } });
+  const windowExpired = !row || now - row.windowStart.getTime() > WINDOW_MS;
+
+  const count = (windowExpired ? 0 : row.failedCount) + 1;
+  const lockedUntil = count >= MAX_ATTEMPTS ? new Date(now + LOCKOUT_MS) : (windowExpired ? null : row?.lockedUntil ?? null);
+
+  await prisma.loginAttempt.upsert({
+    where: { ip },
+    create: {
+      ip,
+      failedCount: count,
+      windowStart: new Date(now),
+      lockedUntil,
+    },
+    update: {
+      failedCount: count,
+      ...(windowExpired ? { windowStart: new Date(now) } : {}),
+      lockedUntil,
+    },
   });
 }
 
-export async function isLoginLocked(): Promise<boolean> {
-  const raw = await getValue(LOCKED_UNTIL_KEY);
-  const lockedUntil = raw ? Number(raw) : 0;
-  return Number.isFinite(lockedUntil) && Date.now() < lockedUntil;
-}
-
-export async function recordFailedLogin(): Promise<void> {
-  const now = Date.now();
-  const sinceRaw = await getValue(FAILED_SINCE_KEY);
-  const since = sinceRaw ? Number(sinceRaw) : 0;
-  const windowExpired = !Number.isFinite(since) || now - since > WINDOW_MS;
-
-  const count = (windowExpired ? 0 : Number((await getValue(FAILED_COUNT_KEY)) ?? "0") || 0) + 1;
-
-  if (windowExpired) {
-    await setValue(FAILED_SINCE_KEY, String(now));
-  }
-  await setValue(FAILED_COUNT_KEY, String(count));
-
-  if (count >= MAX_ATTEMPTS) {
-    await setValue(LOCKED_UNTIL_KEY, String(now + LOCKOUT_MS));
-  }
-}
-
-export async function recordSuccessfulLogin(): Promise<void> {
-  await setValue(FAILED_COUNT_KEY, "0");
-  await setValue(LOCKED_UNTIL_KEY, "0");
+export async function recordSuccessfulLogin(ip: string): Promise<void> {
+  await prisma.loginAttempt.upsert({
+    where: { ip },
+    create: { ip, failedCount: 0, lockedUntil: null },
+    update: { failedCount: 0, lockedUntil: null },
+  });
 }

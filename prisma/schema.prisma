@@ -224,3 +224,16 @@ model AppSetting {
 
   @@map("app_settings")
 }
+
+/// Per-IP login throttling — one row per source IP. Replaces an earlier global
+/// counter that let one attacker's failed attempts lock out the real founder
+/// too. See lib/auth/login-rate-limit.ts.
+model LoginAttempt {
+  ip          String    @id
+  failedCount Int       @default(0)
+  windowStart DateTime  @default(now())
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@map("login_attempts")
+}

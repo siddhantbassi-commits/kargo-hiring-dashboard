@@ -30,11 +30,19 @@ export interface DashboardFilters {
   status?: "shortlist_recommended" | "review_recommended" | "below_threshold";
   search?: string;
   sort?: "score" | "date";
+  page?: number;
 }
 
-export async function getDashboardData(
-  filters: DashboardFilters
-): Promise<{ rows: DashboardRow[]; stats: DashboardStats; threshold: number }> {
+export const DASHBOARD_PAGE_SIZE = 25;
+
+export async function getDashboardData(filters: DashboardFilters): Promise<{
+  rows: DashboardRow[];
+  stats: DashboardStats;
+  threshold: number;
+  page: number;
+  pageCount: number;
+  filteredCount: number;
+}> {
   // Two independent round trips to a Postgres instance on another continent
   // from the app's serverless functions — running them concurrently instead
   // of sequentially halves that latency cost.
@@ -95,5 +103,16 @@ export async function getDashboardData(
     rows.sort((a, b) => (b.appliedRoleScore ?? -1) - (a.appliedRoleScore ?? -1));
   }
 
-  return { rows, stats, threshold };
+  // Pagination happens here, in-memory, after filtering/sorting — not as a
+  // Prisma skip/take — because recommendation/appliedRoleScore are computed
+  // fields, not raw columns a SQL WHERE/ORDER BY can see. Fine at the scale
+  // a single founder's candidate list actually reaches; the full-table fetch
+  // above would be the next bottleneck if this ever grew into the thousands.
+  const filteredCount = rows.length;
+  const pageCount = Math.max(1, Math.ceil(filteredCount / DASHBOARD_PAGE_SIZE));
+  const page = Math.min(Math.max(1, filters.page ?? 1), pageCount);
+  const start = (page - 1) * DASHBOARD_PAGE_SIZE;
+  const pagedRows = rows.slice(start, start + DASHBOARD_PAGE_SIZE);
+
+  return { rows: pagedRows, stats, threshold, page, pageCount, filteredCount };
 }

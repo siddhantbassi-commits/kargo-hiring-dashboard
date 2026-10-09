@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getDashboardData, type DashboardFilters } from "@/lib/queries/dashboard";
+import { getDashboardData, DASHBOARD_PAGE_SIZE, type DashboardFilters } from "@/lib/queries/dashboard";
 import { RecommendationBadge } from "@/components/recommendation-badge";
 import { ScoreBar } from "@/components/score-bar";
 import { Avatar } from "@/components/avatar";
@@ -64,10 +64,23 @@ export default async function DashboardPage(props: PageProps<"/">) {
         : undefined,
     search: get("search") || undefined,
     sort: get("sort") === "date" ? "date" : "score",
+    page: Number(get("page")) || 1,
   };
 
-  const { rows, stats } = await getDashboardData(filters);
+  const { rows, stats, page, pageCount, filteredCount } = await getDashboardData(filters);
   const hasFilters = Boolean(filters.role || filters.status || filters.search);
+
+  // Preserves every other filter/sort param when linking to a different page.
+  const pageHref = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (filters.role) params.set("role", filters.role);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.search) params.set("search", filters.search);
+    if (filters.sort !== "score") params.set("sort", filters.sort ?? "score");
+    if (targetPage > 1) params.set("page", String(targetPage));
+    const qs = params.toString();
+    return qs ? `/?${qs}` : "/";
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -196,7 +209,8 @@ export default async function DashboardPage(props: PageProps<"/">) {
               </thead>
               <tbody>
                 {rows.map((row, i) => {
-                  const medal = RANK_MEDAL[i];
+                  const rank = (page - 1) * DASHBOARD_PAGE_SIZE + i + 1;
+                  const medal = RANK_MEDAL[rank - 1];
                   const roleChip = ROLE_CHIP[row.appliedRoleName];
                   return (
                   <tr key={row.id} className="group border-b border-border last:border-0 hover:bg-surface-hover">
@@ -206,10 +220,10 @@ export default async function DashboardPage(props: PageProps<"/">) {
                           className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold tabular-nums shadow-[var(--shadow-sm)]"
                           style={{ backgroundColor: medal.bg, color: medal.fg }}
                         >
-                          {i + 1}
+                          {rank}
                         </span>
                       ) : (
-                        <span className="pl-1.5 tabular-nums font-semibold text-muted-2">{i + 1}</span>
+                        <span className="pl-1.5 tabular-nums font-semibold text-muted-2">{rank}</span>
                       )}
                     </td>
                     <td className="px-3 py-3">
@@ -264,6 +278,40 @@ export default async function DashboardPage(props: PageProps<"/">) {
           </div>
         )}
       </div>
+
+      {rows.length > 0 && pageCount > 1 ? (
+        <div className="mt-4 flex items-center justify-between text-sm text-muted">
+          <span>
+            Page {page} of {pageCount} · {filteredCount} candidate{filteredCount === 1 ? "" : "s"}
+          </span>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link
+                href={pageHref(page - 1)}
+                className="rounded-md border border-border bg-surface px-3 py-1.5 font-medium text-foreground transition-colors hover:bg-surface-hover"
+              >
+                ← Previous
+              </Link>
+            ) : (
+              <span className="rounded-md border border-border px-3 py-1.5 text-muted-2 opacity-50">
+                ← Previous
+              </span>
+            )}
+            {page < pageCount ? (
+              <Link
+                href={pageHref(page + 1)}
+                className="rounded-md border border-border bg-surface px-3 py-1.5 font-medium text-foreground transition-colors hover:bg-surface-hover"
+              >
+                Next →
+              </Link>
+            ) : (
+              <span className="rounded-md border border-border px-3 py-1.5 text-muted-2 opacity-50">
+                Next →
+              </span>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

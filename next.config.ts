@@ -14,23 +14,9 @@ const COMMON_SECURITY_HEADERS = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];
 
-// Everything here is same-origin: self-hosted fonts (next/font), no client-side
-// calls to Gemini/Resend (server-only), no external scripts or analytics. A
-// stricter nonce-based script-src is possible later; 'unsafe-inline' is kept
-// for Next's App Router hydration scripts, but script-src is still locked to
-// 'self' so an injected <script src="external"> would still be blocked.
-// Left out in dev so Turbopack's HMR isn't fighting a strict CSP.
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-].join("; ");
+// The Content-Security-Policy header is set dynamically per-request in
+// proxy.ts instead (a nonce-based script-src/style-src needs a fresh nonce
+// per request, which a static next.config.ts header can't generate).
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -39,11 +25,7 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    const headers = [...COMMON_SECURITY_HEADERS];
-    if (process.env.NODE_ENV === "production") {
-      headers.push({ key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY });
-    }
-    return [{ source: "/(.*)", headers }];
+    return [{ source: "/(.*)", headers: COMMON_SECURITY_HEADERS }];
   },
 };
 

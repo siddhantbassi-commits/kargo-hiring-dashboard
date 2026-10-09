@@ -109,12 +109,15 @@ npm run e2e           # requires Chromium: npx playwright install chromium (once
 
 A focused Playwright suite covering the critical path only (not full UI coverage): login + the
 unauthenticated redirect boundary, upload → score → review → delete a candidate, and the rubric
-weight-change confirm gate. It runs the real app against a real (ephemeral) Postgres, but Gemini and
-Resend are both faked — `GEMINI_BASE_URL`/`RESEND_BASE_URL` point the real SDKs at tiny local fixture
-servers (`e2e/fixtures/*-server.ts`) instead of the real APIs, so the suite never costs real API usage
-and never sends real email. The Gemini fixture reads the actual prompt text the app sends and returns a
-response shaped to match whichever structured-output schema that prompt is for (see
-`e2e/fixtures/gemini-server.ts`'s comment), rather than hardcoding per-test responses.
+weight-change confirm gate. It runs a real **production build** (`next build` + `next start` —
+see `e2e/start-app.mts`) against a real (ephemeral) Postgres, deliberately not `next dev`: an earlier
+dev-mode version of this suite was flaky in CI in a way that traced back to repeated failed HMR
+WebSocket reconnects resetting client-side React state mid-test, which a production build has no
+mechanism for at all. Gemini and Resend are both faked — `GEMINI_BASE_URL`/`RESEND_BASE_URL` point the
+real SDKs at tiny local fixture servers (`e2e/fixtures/*-server.ts`) instead of the real APIs, so the
+suite never costs real API usage and never sends real email. The Gemini fixture reads the actual prompt
+text the app sends and returns a response shaped to match whichever structured-output schema that
+prompt is for (see `e2e/fixtures/gemini-server.ts`'s comment), rather than hardcoding per-test responses.
 
 Runs in CI on every push/PR (`.github/workflows/e2e.yml`) against a disposable `postgres:16` service
 container — migrated and seeded fresh each run, never touching the real Supabase database. To run it

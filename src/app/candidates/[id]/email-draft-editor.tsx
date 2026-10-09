@@ -122,8 +122,9 @@ export function EmailDraftEditor(props: EmailDraftEditorProps) {
           <form action={saveAction} className="mt-4 flex flex-col gap-3">
             <input type="hidden" name="draftId" value={current.id} />
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Subject</label>
+              <label htmlFor="email-draft-subject" className="text-xs font-medium text-muted">Subject</label>
               <input
+                id="email-draft-subject"
                 name="subject"
                 value={currentText.subject}
                 onChange={(e) =>
@@ -133,8 +134,9 @@ export function EmailDraftEditor(props: EmailDraftEditorProps) {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted">Body</label>
+              <label htmlFor="email-draft-body" className="text-xs font-medium text-muted">Body</label>
               <textarea
+                id="email-draft-body"
                 name="body"
                 value={currentText.body}
                 onChange={(e) =>

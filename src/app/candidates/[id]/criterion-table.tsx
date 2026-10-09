@@ -51,7 +51,7 @@ export function CriterionTable({
     >
       <div className="flex items-baseline justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-foreground">{roleName}</h3>
+          <h2 className="text-sm font-semibold text-foreground">{roleName}</h2>
           {isAppliedRole ? (
             <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent-2">
               Applied Role

@@ -54,6 +54,7 @@ Visit `http://localhost:3000` and sign in with the founder credentials you confi
 | `RESEND_API_KEY` | sending email | From your Resend dashboard |
 | `RESEND_FROM_EMAIL` | sending email | A verified sender address/domain in Resend |
 | `NEXT_PUBLIC_APP_URL` | optional | Public URL of the deployed app |
+| `CRON_SECRET` | `/api/health` cron | Generate with `openssl rand -hex 32` — only needed in Vercel's Production env, see below |
 
 Everything up through scoring/briefs/drafts works without `RESEND_API_KEY`/`RESEND_FROM_EMAIL` — sending
 is the only thing gated on those, and the UI reports a clear configuration error rather than faking a send.
@@ -99,6 +100,16 @@ defense boilerplate, and duplicate-send prevention.
 5. Deploy.
 
 Before deploying: `npm run lint`, `npx tsc --noEmit`, `npm run test`, `npm run build` should all pass.
+
+## Monitoring
+
+`vercel.json` configures a daily Vercel Cron Job (`0 3 * * *` UTC) that hits `/api/health`, which checks
+Supabase (a trivial `SELECT 1`) and Gemini (`models.list`, a free/no-token-cost call) and, on failure,
+emails the founder via Resend with what broke. The route authenticates the cron request itself via the
+`CRON_SECRET` Bearer-token pattern Vercel documents, rather than a session cookie — it isn't behind the
+app's own login. On Vercel's Hobby plan, cron jobs run at most once a day; a daily check is a floor, not
+a replacement for a real uptime monitor, but it closes the gap where both real outages this engagement
+hit were only found by someone manually clicking around.
 
 ## Privacy architecture (summary)
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { processCandidate } from "@/lib/pipeline/process-candidate";
@@ -71,4 +72,32 @@ export async function sendEmailAction(
   revalidatePath(`/candidates/${candidateId}`);
   if (!result.ok) return { error: result.error };
   return { success: true };
+}
+
+export interface DeleteState {
+  error?: string;
+}
+
+/**
+ * Permanently deletes a candidate and everything derived from them (private
+ * details, scores, interview brief, email drafts/sends) — every related
+ * table cascades from candidates in the schema, so this one call is a
+ * complete erasure, not a partial one. This is the data-deletion path for a
+ * candidate PII removal request; there is no candidate-facing self-service
+ * version since candidates never have accounts in this app — the founder
+ * acts on their behalf.
+ */
+export async function deleteCandidateAction(
+  candidateId: string,
+  _prevState: DeleteState | undefined,
+  _formData: FormData
+): Promise<DeleteState> {
+  await requireAuth();
+  try {
+    await prisma.candidate.delete({ where: { id: candidateId } });
+  } catch {
+    return { error: "Could not delete this candidate. Refresh and try again." };
+  }
+  revalidatePath("/");
+  redirect("/");
 }

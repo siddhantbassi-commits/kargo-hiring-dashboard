@@ -107,6 +107,12 @@ ever sees `sanitizedCvText`, which has every detected occurrence of the name/ema
 placeholder. Emails are drafted with a `{{candidate_name}}` placeholder and the real name is substituted
 server-side after generation. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full pipeline diagram.
 
+**Data deletion:** every candidate detail page has a "Delete candidate" control (founder-only, two-step
+confirm) that permanently removes the candidate and everything derived from them — private details,
+scores, interview brief, email drafts/history — in one cascading delete. There's no candidate-facing
+self-service version since candidates never have accounts here; the founder actions a deletion request on
+their behalf.
+
 ## Known limitations
 
 - **PII redaction is heuristic, not perfect.** Name detection in particular relies on "name-shaped first

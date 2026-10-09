@@ -6,6 +6,7 @@ import { Avatar } from "@/components/avatar";
 import { ScoreRing } from "@/components/score-ring";
 import { CriterionTable } from "./criterion-table";
 import { EmailDraftEditor } from "./email-draft-editor";
+import { DeleteCandidateButton } from "./delete-candidate-button";
 import { rescoreCandidateAction } from "./actions";
 
 export const maxDuration = 120;
@@ -158,6 +159,8 @@ export default async function CandidateDetailPage(props: PageProps<"/candidates/
       ) : candidate.processingStatus === "ready" ? (
         <p className="mt-6 text-sm text-muted">No email draft was generated for this candidate.</p>
       ) : null}
+
+      <DeleteCandidateButton candidateId={candidate.id} name={name} />
     </div>
   );
 }

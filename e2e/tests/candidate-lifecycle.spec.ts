@@ -40,9 +40,17 @@ test("upload → score → review → delete a candidate", async ({ page }) => {
   expect(bodyText).toContain("Priya");
   expect(bodyText).not.toContain("{{candidate_name}}");
 
-  // Delete: two-step confirm, then gone from the dashboard.
-  await page.getByRole("button", { name: "Delete candidate" }).click();
-  await page.getByRole("button", { name: "Confirm Delete" }).click();
+  // Delete: two-step confirm, then gone from the dashboard. Retried as a
+  // whole: this candidate's detail page is a brand-new route Turbopack dev
+  // hasn't compiled yet, so a click can land before this client component
+  // has hydrated and silently do nothing — the retry just repeats the click
+  // once hydration has caught up, rather than guessing a fixed wait.
+  const confirmDeleteButton = page.getByRole("button", { name: "Confirm Delete" });
+  await expect(async () => {
+    await page.getByRole("button", { name: "Delete candidate" }).click();
+    await expect(confirmDeleteButton).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+  await confirmDeleteButton.click();
 
   await expect(page).toHaveURL("/");
   await expect(page.getByText("Priya Sharma")).toHaveCount(0);

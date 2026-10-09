@@ -1,34 +1,29 @@
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 // Uses the "authenticated" project's saved session — see playwright.config.ts.
 // Every assertion here ends by Cancelling rather than Confirming, so the
 // shared rubric_versions data this suite's other tests rely on is never
 // actually mutated by this spec.
 
-/**
- * `locator.fill()` right after `page.goto()` can race Next dev's first-visit
- * lazy compile + React hydration of this client component: the fill can
- * land on the DOM before React has attached its controlled-input state,
- * and hydration then reconciles the input back to its original value,
- * silently discarding it. Retrying the fill until it actually sticks absorbs
- * that race without a fixed arbitrary sleep.
- */
-async function fillAndConfirm(locator: Locator, value: string) {
-  await expect(async () => {
-    await locator.fill(value);
-    await expect(locator).toHaveValue(value);
-  }).toPass({ timeout: 10_000 });
-}
-
 test("an unbalanced rubric blocks saving", async ({ page }) => {
   await page.goto("/rubric");
 
-  const pmWeights = page.locator('input[name^="weight__PM__"]');
-  const first = pmWeights.first();
+  const first = page.locator('input[name^="weight__PM__"]').first();
   const original = Number(await first.inputValue());
-  await fillAndConfirm(first, String(original + 5));
+  const badge = page.getByText("≠ 100%").first();
 
-  await expect(page.getByText("≠ 100%").first()).toBeVisible();
+  // Retried as a whole, not just the fill: this page is a brand-new route
+  // Turbopack dev hasn't compiled yet, so a fill can land on the raw DOM
+  // before this client component has hydrated — React then reconciles the
+  // (still-uncontrolled) input back to its original value once it does
+  // mount, silently discarding the edit. Re-filling until the resulting,
+  // React-computed badge actually appears self-heals regardless of exactly
+  // when hydration finishes, instead of guessing a fixed wait.
+  await expect(async () => {
+    await first.fill(String(original + 5));
+    await expect(badge).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+
   await expect(page.getByRole("button", { name: /Save as rubric/ }).first()).toBeDisabled();
 });
 
@@ -40,13 +35,18 @@ test("a balanced change shows a confirm step with an exact diff before saving", 
   const second = pmWeights.nth(1);
   const firstOriginal = Number(await first.inputValue());
   const secondOriginal = Number(await second.inputValue());
-
-  // Shift 1 point from the second criterion to the first — total stays 100.
-  await fillAndConfirm(first, String(firstOriginal + 1));
-  await fillAndConfirm(second, String(secondOriginal - 1));
-
   const saveButton = page.getByRole("button", { name: /Save as rubric/ }).first();
-  await expect(saveButton).toBeEnabled();
+
+  // Same hydration-race concern as above — retry the whole pair of fills
+  // until the Save button's enabled state (computed from React state, not
+  // the raw DOM) actually reflects them.
+  await expect(async () => {
+    // Shift 1 point from the second criterion to the first — total stays 100.
+    await first.fill(String(firstOriginal + 1));
+    await second.fill(String(secondOriginal - 1));
+    await expect(saveButton).toBeEnabled({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+
   await saveButton.click();
 
   await expect(

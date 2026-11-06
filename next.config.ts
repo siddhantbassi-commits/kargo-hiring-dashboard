@@ -18,7 +18,21 @@ const COMMON_SECURITY_HEADERS = [
 // proxy.ts instead (a nonce-based script-src/style-src needs a fresh nonce
 // per request, which a static next.config.ts header can't generate).
 
+// @prisma/client ships WASM query engines for every database it supports
+// (CockroachDB, MySQL, SQL Server, SQLite, ...) and Next's file tracing
+// copies all of them into every serverless function (~57 MB each). This app
+// uses Postgres via the native library engine, so they are dead weight and
+// they multiply across routes x deployments in Vercel's Functions Storage.
+// Measured locally: page functions drop from ~80 MB to ~27 MB. The proxy
+// trace is not affected by this option (it is bloated because proxy.ts
+// imports auth.ts, which imports the DB layer).
 const nextConfig: NextConfig = {
+  outputFileTracingExcludes: {
+    "*": [
+      "node_modules/@prisma/client/runtime/*.wasm-base64.*",
+      "node_modules/@prisma/client/runtime/*.wasm",
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,
